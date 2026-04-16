@@ -1,0 +1,359 @@
+---
+export interface Props {
+  repo: {
+    name: string;
+    description: string | null;
+    clean_description: string | null;
+    url: string;
+    updated_at: string;
+    stars: number;
+    forks: number;
+    language: string | null;
+    tech_stack: string[];
+    topics: string[];
+    live_links: string[];
+    importance_score: number;
+    fork: boolean;
+    archived: boolean;
+    license: string | null;
+  };
+  maxScore: number;
+}
+const { repo, maxScore } = Astro.props;
+const scorePercent =
+  maxScore > 0 ? Math.min(100, (repo.importance_score / maxScore) * 100) : 0;
+const displayDate = new Date(repo.updated_at).toLocaleDateString("en-US", {
+  month: "short",
+  year: "numeric",
+});
+---
+
+<div class:list={["repo-card", repo.archived && "repo-card--archived"]}>
+  <!-- Header row -->
+  <div class="repo-header">
+    <div class="repo-title-row">
+      <a
+        href={repo.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="repo-name"
+      >
+        {repo.name}
+      </a>
+      <div class="repo-badges">
+        {repo.fork && <span class="badge badge-fork">fork</span>}
+        {repo.archived && <span class="badge badge-archived">archived</span>}
+        {
+          repo.license && (
+            <span class="badge badge-license">{repo.license}</span>
+          )
+        }
+      </div>
+    </div>
+    {
+      (repo.clean_description || repo.description) && (
+        <p class="repo-desc">{repo.clean_description ?? repo.description}</p>
+      )
+    }
+  </div>
+
+  <!-- Live links -->
+  {
+    repo.live_links.length > 0 && (
+      <div class="repo-live-links">
+        {repo.live_links.map((link) => (
+          <a
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="live-link-chip"
+          >
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
+              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+            Live
+          </a>
+        ))}
+      </div>
+    )
+  }
+
+  <!-- Tech stack badges -->
+  {
+    repo.tech_stack.length > 0 && (
+      <div class="repo-tech-stack">
+        {repo.tech_stack.slice(0, 10).map((tech) => (
+          <span class="tech-badge">{tech}</span>
+        ))}
+      </div>
+    )
+  }
+
+  <!-- Topics -->
+  {
+    repo.topics.length > 0 && (
+      <div class="repo-topics">
+        {repo.topics.slice(0, 6).map((topic) => (
+          <span class="topic-tag">#{topic}</span>
+        ))}
+      </div>
+    )
+  }
+
+  <!-- Footer stats -->
+  <div class="repo-footer">
+    <div class="repo-stats">
+      {
+        repo.language && (
+          <span class="repo-stat">
+            <span class="lang-dot" />
+            {repo.language}
+          </span>
+        )
+      }
+      <span class="repo-stat">
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <polygon
+            points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+          ></polygon>
+        </svg>
+        {repo.stars}
+      </span>
+      <span class="repo-stat">
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line x1="6" y1="3" x2="6" y2="15"></line>
+          <circle cx="18" cy="6" r="3"></circle>
+          <circle cx="6" cy="18" r="3"></circle>
+          <path d="M18 9a9 9 0 01-9 9"></path>
+        </svg>
+        {repo.forks}
+      </span>
+      <span class="repo-stat repo-stat-date">{displayDate}</span>
+    </div>
+    <!-- Importance score bar -->
+    <div class="score-section">
+      <span class="score-label">Score {repo.importance_score}</span>
+      <div class="score-bar-track">
+        <div
+          class="score-bar-fill"
+          style={`width: ${scorePercent.toFixed(1)}%`}
+        >
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .repo-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    background: var(--color-base-lighter);
+    border: 1px solid var(--color-border);
+    border-left: 3px solid var(--color-accent);
+    padding: 1rem 1.25rem;
+    transition: border-color 0.15s;
+  }
+
+  .repo-card:hover {
+    border-color: var(--color-accent);
+    border-left-color: var(--color-accent);
+  }
+
+  .repo-card--archived {
+    border-left-color: #6b7280;
+    opacity: 0.8;
+  }
+
+  .repo-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .repo-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .repo-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-accent);
+    text-decoration: none;
+    word-break: break-word;
+  }
+  .repo-name:hover {
+    text-decoration: underline;
+  }
+
+  .repo-badges {
+    display: flex;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    font-size: 0.65rem;
+    padding: 0.1rem 0.4rem;
+    border: 1px solid;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+  .badge-fork {
+    color: #a78bfa;
+    border-color: #a78bfa;
+  }
+  .badge-archived {
+    color: #6b7280;
+    border-color: #6b7280;
+  }
+  .badge-license {
+    color: var(--color-muted);
+    border-color: var(--color-border);
+  }
+
+  .repo-desc {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--color-muted);
+    line-height: 1.5;
+  }
+
+  .repo-live-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .live-link-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--color-white);
+    background: var(--color-accent);
+    padding: 0.2rem 0.6rem;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .live-link-chip:hover {
+    background: var(--color-accent-dark);
+  }
+
+  .repo-tech-stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .tech-badge {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--color-white);
+    background: rgba(59, 130, 246, 0.18);
+    border: 1px solid var(--color-border-accent);
+    padding: 0.15rem 0.45rem;
+  }
+
+  .repo-topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .topic-tag {
+    font-size: 0.7rem;
+    color: var(--color-muted);
+    padding: 0.1rem 0;
+  }
+
+  .repo-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: auto;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .repo-stats {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .repo-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--color-muted);
+  }
+
+  .lang-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    background: var(--color-accent);
+  }
+
+  .repo-stat-date {
+    margin-left: auto;
+  }
+
+  .score-section {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .score-label {
+    font-size: 0.68rem;
+    color: var(--color-muted);
+    white-space: nowrap;
+    min-width: 5rem;
+  }
+
+  .score-bar-track {
+    flex: 1;
+    height: 3px;
+    background: var(--color-border);
+  }
+
+  .score-bar-fill {
+    height: 3px;
+    background: var(--color-accent);
+    min-width: 2px;
+  }
+</style>

@@ -1,0 +1,164 @@
+---
+// JsonPreview renders the final JSON with copy + download buttons.
+// Data is passed as a string to avoid re-serializing.
+export interface Props {
+  jsonString: string;
+}
+const { jsonString } = Astro.props;
+---
+
+<div class="json-preview" id="json-preview">
+  <div class="json-toolbar">
+    <span class="json-label">
+      <span class="label-bar"></span>
+      JSON Output
+    </span>
+    <div class="json-actions">
+      <button id="btn-copy" class="json-btn" type="button">
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <rect x="9" y="9" width="13" height="13" rx="0"></rect>
+          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+        </svg>
+        Copy
+      </button>
+      <button id="btn-download" class="json-btn json-btn--accent" type="button">
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Download
+      </button>
+    </div>
+  </div>
+  <pre class="json-body" id="json-body"><code>{jsonString}</code></pre>
+</div>
+
+<script>
+  const body = document.getElementById("json-body");
+  const btnCopy = document.getElementById("btn-copy");
+  const btnDownload = document.getElementById("btn-download");
+
+  btnCopy?.addEventListener("click", async () => {
+    const text = body?.textContent ?? "";
+    try {
+      await navigator.clipboard.writeText(text);
+      if (btnCopy) {
+        const orig = btnCopy.textContent;
+        btnCopy.textContent = "Copied!";
+        setTimeout(() => {
+          if (btnCopy && orig) btnCopy.textContent = orig;
+        }, 1500);
+      }
+    } catch {
+      // fallback for non-secure contexts
+      // Silent fallback — clipboard API unavailable in non-secure context
+    }
+  });
+
+  btnDownload?.addEventListener("click", () => {
+    const text = body?.textContent ?? "";
+    const blob = new Blob([text], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "gitfolio.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+</script>
+
+<style>
+  .json-preview {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+  }
+
+  .json-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--color-base-darker);
+    border-bottom: 1px solid var(--color-border);
+    padding: 0.6rem 1rem;
+  }
+
+  .json-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-accent);
+  }
+
+  .label-bar {
+    display: inline-block;
+    width: 3px;
+    height: 14px;
+    background: var(--color-accent);
+  }
+
+  .json-actions {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .json-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-white);
+    background: var(--color-base-lighter);
+    border: 1px solid var(--color-border);
+    padding: 0.3rem 0.7rem;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .json-btn:hover {
+    background: var(--color-base);
+  }
+
+  .json-btn--accent {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+  .json-btn--accent:hover {
+    background: var(--color-accent-dark);
+  }
+
+  .json-body {
+    margin: 0;
+    padding: 1rem;
+    background: var(--color-base-darker);
+    overflow: auto;
+    max-height: 480px;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    color: #e2e8f0;
+    white-space: pre;
+    tab-size: 2;
+  }
+</style>

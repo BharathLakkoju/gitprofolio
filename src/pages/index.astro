@@ -1,0 +1,1796 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout>
+  <!-- ═══════════════════════════════════════════════════ NAVBAR -->
+  <header class="navbar">
+    <div class="navbar-inner">
+      <div class="navbar-brand">
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          class="navbar-icon"
+        >
+          <circle cx="12" cy="8" r="4"></circle>
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"></path>
+          <line x1="17" y1="3" x2="21" y2="7" stroke-width="1.5"></line>
+          <polyline points="19 3 21 3 21 5" stroke-width="1.5"></polyline>
+        </svg>
+        <span class="navbar-title">Gitfolio Extractor</span>
+      </div>
+      <span class="navbar-badge">v1.0</span>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════ HERO -->
+  <section class="hero">
+    <div class="container">
+      <h1 class="hero-title">GitHub Profile → Structured JSON</h1>
+      <p class="hero-subtitle">
+        Extract, enrich and score any public GitHub profile with tech stack
+        detection, live link discovery, and portfolio-ready output.
+      </p>
+
+      <!-- Search form -->
+      <form id="search-form" class="search-form" autocomplete="off">
+        <div class="search-input-wrap">
+          <svg
+            class="search-icon"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="8" r="4"></circle><path
+              d="M4 20c0-4 3.6-7 8-7s8 3 8 7"></path>
+          </svg>
+          <input
+            id="username-input"
+            type="text"
+            name="github_username"
+            placeholder="github username"
+            class="search-input"
+            spellcheck="false"
+            autocapitalize="none"
+            required
+            maxlength="39"
+          />
+        </div>
+        <button type="submit" id="submit-btn" class="search-btn">
+          <span id="btn-text">Extract Profile</span>
+          <span id="btn-spinner" class="spinner" style="display:none"></span>
+        </button>
+      </form>
+
+      <!-- Error banner -->
+      <div id="error-banner" class="error-banner" style="display:none">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="12" cy="12" r="10"></circle><line
+            x1="12"
+            y1="8"
+            x2="12"
+            y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span id="error-text"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════ RESULTS -->
+  <main class="container" id="results" style="display:none">
+    <!-- Profile -->
+    <section class="results-section" id="section-profile">
+      <div class="section-heading">
+        <span class="section-bar"></span>
+        <h2 class="section-title">Profile</h2>
+      </div>
+      <div id="profile-slot"></div>
+    </section>
+
+    <!-- Top projects -->
+    <section class="results-section" id="section-top" style="display:none">
+      <div id="top-projects-slot"></div>
+    </section>
+
+    <!-- Repositories -->
+    <section class="results-section" id="section-repos">
+      <div class="section-heading">
+        <span class="section-bar"></span>
+        <h2 class="section-title">
+          Repositories <span id="repo-count" class="section-count"></span>
+        </h2>
+        <!-- Filter bar -->
+        <div class="filter-bar" id="filter-bar" style="display:none">
+          <button class="filter-btn filter-btn--active" data-filter="all"
+            >All</button
+          >
+          <button class="filter-btn" data-filter="original">Original</button>
+          <button class="filter-btn" data-filter="live">Has Live Link</button>
+          <button class="filter-btn" data-filter="stars">Starred</button>
+        </div>
+      </div>
+      <div id="repos-grid" class="repos-grid"></div>
+    </section>
+
+    <!-- JSON preview -->
+    <section class="results-section">
+      <div class="section-heading">
+        <span class="section-bar"></span>
+        <h2 class="section-title">JSON Output</h2>
+      </div>
+      <div class="json-preview-wrap">
+        <div class="json-toolbar">
+          <span class="json-label">application/json</span>
+          <div class="json-actions">
+            <button id="btn-copy" class="json-btn" type="button">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="9" y="9" width="13" height="13"></rect><path
+                  d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+              </svg>
+              Copy JSON
+            </button>
+            <button
+              id="btn-download"
+              class="json-btn json-btn--accent"
+              type="button"
+            >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline><line
+                  x1="12"
+                  y1="15"
+                  x2="12"
+                  y2="3"></line>
+              </svg>
+              Download
+            </button>
+          </div>
+        </div>
+        <pre class="json-body" id="json-body"><code id="json-code" /></pre>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════ AI INSIGHTS -->
+    <section class="results-section" id="section-ai">
+      <div class="section-heading">
+        <span class="section-bar"></span>
+        <h2 class="section-title">
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          AI Insights
+        </h2>
+        <button id="btn-ai-analyze" class="ai-btn" type="button">
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="3"></circle>
+            <path
+              d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"
+            ></path>
+          </svg>
+          Analyze with AI
+        </button>
+      </div>
+      <div id="ai-loading" class="ai-loading" style="display:none">
+        <span class="spinner"></span>
+        <span>Generating AI insights — this may take 20–40 seconds...</span>
+      </div>
+      <div id="ai-err" class="ai-error" style="display:none"></div>
+      <div id="ai-panel" style="display:none">
+        <div id="ai-visibility-slot" class="ai-subsection"></div>
+        <div id="ai-ideas-slot" class="ai-subsection"></div>
+        <div id="ai-metadata-slot" class="ai-subsection"></div>
+        <div id="ai-contribute-slot" class="ai-subsection"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════ FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <span>Gitfolio Extractor — powered by the GitHub REST API</span>
+    </div>
+  </footer>
+</BaseLayout>
+
+<!-- ═══════════════════════════════════════════════════════════════ CLIENT SCRIPT -->
+<script>
+  // ── State ────────────────────────────────────────────────────────────────────
+  let allRepos: any[] = [];
+  let extractedData: any = null;
+
+  // ── DOM refs ─────────────────────────────────────────────────────────────────
+  const form = document.getElementById("search-form") as HTMLFormElement;
+  const input = document.getElementById("username-input") as HTMLInputElement;
+  const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
+  const btnText = document.getElementById("btn-text") as HTMLSpanElement;
+  const btnSpinner = document.getElementById("btn-spinner") as HTMLSpanElement;
+  const errorBanner = document.getElementById("error-banner") as HTMLDivElement;
+  const errorText = document.getElementById("error-text") as HTMLSpanElement;
+  const resultsEl = document.getElementById("results") as HTMLElement;
+  const profileSlot = document.getElementById("profile-slot") as HTMLDivElement;
+  const topProjectsSlot = document.getElementById(
+    "top-projects-slot",
+  ) as HTMLDivElement;
+  const sectionTop = document.getElementById("section-top") as HTMLElement;
+  const reposGrid = document.getElementById("repos-grid") as HTMLDivElement;
+  const repoCount = document.getElementById("repo-count") as HTMLSpanElement;
+  const filterBar = document.getElementById("filter-bar") as HTMLDivElement;
+  const jsonCode = document.getElementById("json-code") as HTMLElement;
+  const btnCopy = document.getElementById("btn-copy") as HTMLButtonElement;
+  const btnDownload = document.getElementById(
+    "btn-download",
+  ) as HTMLButtonElement;
+
+  // ── Form submit ───────────────────────────────────────────────────────────────
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const username = input.value.trim();
+    if (!username) return;
+    await runExtraction(username);
+  });
+
+  async function runExtraction(username: string) {
+    setLoading(true);
+    hideError();
+    hideResults();
+
+    try {
+      const res = await fetch("/api/scrape", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ github_username: username }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showError(data.error ?? `Server error (${res.status})`);
+        return;
+      }
+
+      allRepos = data.repositories ?? [];
+      extractedData = data;
+      renderResults(data);
+    } catch (err) {
+      showError("Network error — please check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────────
+  function renderResults(data: any) {
+    renderProfile(data.profile);
+    renderTopProjects(data.top_projects, data.repositories);
+    renderRepos(data.repositories);
+    renderJson(data);
+    resultsEl.style.display = "block";
+    resultsEl.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function renderProfile(p: any) {
+    const website = p.website
+      ? `<a href="${esc(p.website.startsWith("http") ? p.website : "https://" + p.website)}" target="_blank" rel="noopener noreferrer" class="meta-chip meta-link">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+      Website</a>`
+      : "";
+    const twitter = p.socials?.twitter
+      ? `<a href="${esc(p.socials.twitter)}" target="_blank" rel="noopener noreferrer" class="meta-chip meta-link">Twitter</a>`
+      : "";
+    const linkedin = p.socials?.linkedin
+      ? `<a href="${esc(p.socials.linkedin)}" target="_blank" rel="noopener noreferrer" class="meta-chip meta-link">LinkedIn</a>`
+      : "";
+    const location = p.location
+      ? `<span class="meta-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${esc(p.location)}</span>`
+      : "";
+    const company = p.company
+      ? `<span class="meta-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>${esc(p.company)}</span>`
+      : "";
+
+    profileSlot.innerHTML = `
+      <div class="profile-card">
+        <div class="profile-avatar-col">
+          <img src="${esc(p.avatar_url)}" alt="${esc(p.username)}'s avatar" class="profile-avatar" width="88" height="88" loading="lazy" />
+        </div>
+        <div class="profile-info-col">
+          <div class="profile-name-row">
+            <span class="profile-name">${esc(p.name ?? p.username)}</span>
+            <a href="https://github.com/${esc(p.username)}" target="_blank" rel="noopener noreferrer" class="profile-handle">@${esc(p.username)}</a>
+          </div>
+          ${p.bio ? `<p class="profile-bio">${esc(p.bio)}</p>` : ""}
+          <div class="profile-meta">${location}${company}${website}${twitter}${linkedin}</div>
+          <div class="profile-stats">
+            <div class="stat-item"><span class="stat-value">${p.stats.public_repos}</span><span class="stat-label">Repos</span></div>
+            <div class="stat-divider"></div>
+            <div class="stat-item"><span class="stat-value">${p.stats.followers.toLocaleString()}</span><span class="stat-label">Followers</span></div>
+            <div class="stat-divider"></div>
+            <div class="stat-item"><span class="stat-value">${p.stats.following.toLocaleString()}</span><span class="stat-label">Following</span></div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function renderTopProjects(topProjects: string[], repositories: any[]) {
+    if (!topProjects || topProjects.length === 0) {
+      sectionTop.style.display = "none";
+      return;
+    }
+    const repoMap = new Map(repositories.map((r: any) => [r.name, r]));
+    const items = topProjects
+      .map((name: string, i: number) => {
+        const repo = repoMap.get(name) as any;
+        const lang = repo?.language
+          ? `<span class="top-lang">${esc(repo.language)}</span>`
+          : "";
+        const stars = repo
+          ? `<span class="top-stars"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${repo.stars}</span>`
+          : "";
+        return `<a href="${esc(repo?.url ?? "#")}" target="_blank" rel="noopener noreferrer" class="top-item">
+        <span class="top-rank">#${i + 1}</span>
+        <span class="top-name">${esc(name)}</span>
+        ${lang}${stars}
+      </a>`;
+      })
+      .join("");
+
+    topProjectsSlot.innerHTML = `
+      <div class="top-projects">
+        <div class="section-heading">
+          <span class="section-bar"></span>
+          <h2 class="section-title">Top Projects</h2>
+        </div>
+        <div class="top-list">${items}</div>
+      </div>`;
+    sectionTop.style.display = "block";
+  }
+
+  function renderRepos(repos: any[]) {
+    if (repos.length === 0) {
+      reposGrid.innerHTML = `<p class="empty-state">No public repositories found.</p>`;
+      filterBar.style.display = "none";
+      return;
+    }
+    filterBar.style.display = "flex";
+    repoCount.textContent = `(${repos.length})`;
+    renderRepoCards(repos);
+    setupFilters();
+  }
+
+  function renderRepoCards(repos: any[]) {
+    const maxScore = Math.max(...repos.map((r: any) => r.importance_score), 1);
+    reposGrid.innerHTML = repos
+      .map((repo: any) => repoCardHtml(repo, maxScore))
+      .join("");
+  }
+
+  function repoCardHtml(repo: any, maxScore: number): string {
+    const scorePercent =
+      maxScore > 0
+        ? Math.min(100, (repo.importance_score / maxScore) * 100).toFixed(1)
+        : "0";
+    const date = new Date(repo.updated_at).toLocaleDateString("en-US", {
+      month: "short",
+      year: "numeric",
+    });
+
+    const badges = [
+      repo.fork ? `<span class="badge badge-fork">fork</span>` : "",
+      repo.archived ? `<span class="badge badge-archived">archived</span>` : "",
+      repo.license
+        ? `<span class="badge badge-license">${esc(repo.license)}</span>`
+        : "",
+    ].join("");
+
+    const liveLinks = repo.live_links?.length
+      ? repo.live_links
+          .map(
+            (l: string) =>
+              `<a href="${esc(l)}" target="_blank" rel="noopener noreferrer" class="live-link-chip"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Live</a>`,
+          )
+          .join("")
+      : "";
+
+    const techBadges =
+      repo.tech_stack
+        ?.slice(0, 10)
+        .map((t: string) => `<span class="tech-badge">${esc(t)}</span>`)
+        .join("") ?? "";
+    const topics =
+      repo.topics
+        ?.slice(0, 6)
+        .map((t: string) => `<span class="topic-tag">#${esc(t)}</span>`)
+        .join("") ?? "";
+    const langDot = repo.language
+      ? `<span class="repo-stat"><span class="lang-dot"></span>${esc(repo.language)}</span>`
+      : "";
+
+    const desc = repo.clean_description ?? repo.description;
+
+    return `
+      <div class="repo-card${repo.archived ? " repo-card--archived" : ""}" data-fork="${repo.fork}" data-live="${repo.live_links?.length > 0}" data-stars="${repo.stars}">
+        <div class="repo-header">
+          <div class="repo-title-row">
+            <a href="${esc(repo.url)}" target="_blank" rel="noopener noreferrer" class="repo-name">${esc(repo.name)}</a>
+            <div class="repo-badges">${badges}</div>
+          </div>
+          ${desc ? `<p class="repo-desc">${esc(desc)}</p>` : ""}
+        </div>
+        ${liveLinks ? `<div class="repo-live-links">${liveLinks}</div>` : ""}
+        ${techBadges ? `<div class="repo-tech-stack">${techBadges}</div>` : ""}
+        ${topics ? `<div class="repo-topics">${topics}</div>` : ""}
+        <div class="repo-footer">
+          <div class="repo-stats">
+            ${langDot}
+            <span class="repo-stat"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${repo.stars}</span>
+            <span class="repo-stat"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 01-9 9"/></svg>${repo.forks}</span>
+            <span class="repo-stat repo-stat-date">${date}</span>
+          </div>
+          <div class="score-section">
+            <span class="score-label">Score ${repo.importance_score}</span>
+            <div class="score-bar-track"><div class="score-bar-fill" style="width:${scorePercent}%"></div></div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function setupFilters() {
+    const btns = filterBar.querySelectorAll<HTMLButtonElement>(".filter-btn");
+    btns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        btns.forEach((b) => b.classList.remove("filter-btn--active"));
+        btn.classList.add("filter-btn--active");
+        const filter = btn.dataset.filter;
+        let filtered = allRepos;
+        if (filter === "original") filtered = allRepos.filter((r) => !r.fork);
+        else if (filter === "live")
+          filtered = allRepos.filter((r) => r.live_links?.length > 0);
+        else if (filter === "stars")
+          filtered = allRepos.filter((r) => r.stars > 0);
+        renderRepoCards(filtered);
+      });
+    });
+  }
+
+  function renderJson(data: any) {
+    const text = JSON.stringify(data, null, 2);
+    jsonCode.textContent = text;
+  }
+
+  // ── JSON buttons ──────────────────────────────────────────────────────────────
+  btnCopy.addEventListener("click", async () => {
+    const text = jsonCode.textContent ?? "";
+    try {
+      await navigator.clipboard.writeText(text);
+      const orig = btnCopy.innerHTML;
+      btnCopy.textContent = "Copied!";
+      setTimeout(() => {
+        btnCopy.innerHTML = orig;
+      }, 1500);
+    } catch {
+      /* ignore */
+    }
+  });
+
+  btnDownload.addEventListener("click", () => {
+    const text = jsonCode.textContent ?? "";
+    const blob = new Blob([text], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${input.value.trim() || "gitfolio"}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // ── Helpers ───────────────────────────────────────────────────────────────────
+  function esc(str: string): string {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function setLoading(on: boolean) {
+    submitBtn.disabled = on;
+    btnText.style.display = on ? "none" : "inline";
+    btnSpinner.style.display = on ? "inline-block" : "none";
+  }
+
+  function showError(msg: string) {
+    errorText.textContent = msg;
+    errorBanner.style.display = "flex";
+  }
+
+  function hideError() {
+    errorBanner.style.display = "none";
+    errorText.textContent = "";
+  }
+
+  function hideResults() {
+    resultsEl.style.display = "none";
+    profileSlot.innerHTML = "";
+    topProjectsSlot.innerHTML = "";
+    reposGrid.innerHTML = "";
+    jsonCode.textContent = "";
+    // Reset AI state
+    extractedData = null;
+    const aiPanel = document.getElementById("ai-panel") as HTMLDivElement;
+    const aiLoading = document.getElementById("ai-loading") as HTMLDivElement;
+    const aiErr = document.getElementById("ai-err") as HTMLDivElement;
+    const aiBtn = document.getElementById(
+      "btn-ai-analyze",
+    ) as HTMLButtonElement;
+    if (aiPanel) {
+      aiPanel.style.display = "none";
+      aiPanel
+        .querySelectorAll(".ai-subsection")
+        .forEach((el) => ((el as HTMLElement).innerHTML = ""));
+    }
+    if (aiLoading) aiLoading.style.display = "none";
+    if (aiErr) {
+      aiErr.style.display = "none";
+      aiErr.textContent = "";
+    }
+    if (aiBtn) {
+      aiBtn.disabled = false;
+    }
+  }
+
+  // ── AI Insights ───────────────────────────────────────────────────────────────
+  document
+    .getElementById("btn-ai-analyze")!
+    .addEventListener("click", async () => {
+      if (!extractedData) return;
+      const aiBtn = document.getElementById(
+        "btn-ai-analyze",
+      ) as HTMLButtonElement;
+      const aiLoading = document.getElementById("ai-loading") as HTMLDivElement;
+      const aiErr = document.getElementById("ai-err") as HTMLDivElement;
+      const aiPanel = document.getElementById("ai-panel") as HTMLDivElement;
+
+      aiBtn.disabled = true;
+      aiLoading.style.display = "flex";
+      aiErr.style.display = "none";
+      aiPanel.style.display = "none";
+
+      try {
+        const res = await fetch("/api/ai-insights", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            profile: extractedData.profile,
+            repositories: extractedData.repositories,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          aiErr.textContent = data.error ?? `AI error (${res.status})`;
+          aiErr.style.display = "block";
+          aiBtn.disabled = false;
+          return;
+        }
+        renderAIInsights(data);
+        aiPanel.style.display = "flex";
+      } catch {
+        aiErr.textContent = "Network error — could not reach AI service.";
+        aiErr.style.display = "block";
+        aiBtn.disabled = false;
+      } finally {
+        aiLoading.style.display = "none";
+      }
+    });
+
+  function renderAIInsights(insights: any) {
+    renderVisibilityTips(insights.visibility_tips ?? []);
+    renderProjectIdeas(insights.project_ideas ?? []);
+    renderMetadataSuggestions(insights.metadata_suggestions ?? []);
+    renderContributionTargets(insights.contribution_targets ?? []);
+  }
+
+  function renderVisibilityTips(tips: any[]) {
+    const slot = document.getElementById(
+      "ai-visibility-slot",
+    ) as HTMLDivElement;
+    if (!tips.length) {
+      slot.innerHTML = "";
+      return;
+    }
+    const cards = tips
+      .map(
+        (t: any) => `
+      <div class="ai-tip-card priority-${esc(t.priority ?? "low")}">
+        <div class="tip-meta">
+          <span class="tip-repo">${esc(t.repo ?? "profile")}</span>
+          <span class="tip-category">${esc(t.category ?? "")}</span>
+          <span class="tip-priority">${esc(t.priority ?? "low")}</span>
+        </div>
+        <span class="tip-text">${esc(t.tip ?? "")}</span>
+      </div>`,
+      )
+      .join("");
+    slot.innerHTML = `
+      <div class="ai-sub-heading">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        Visibility &amp; Stars Recommendations
+      </div>
+      <div class="ai-tip-list">${cards}</div>`;
+  }
+
+  function renderProjectIdeas(ideas: any[]) {
+    const slot = document.getElementById("ai-ideas-slot") as HTMLDivElement;
+    if (!ideas.length) {
+      slot.innerHTML = "";
+      return;
+    }
+    const cards = ideas
+      .map((idea: any) => {
+        const tech = (idea.tech_stack ?? [])
+          .map((t: string) => `<span class="tech-badge">${esc(t)}</span>`)
+          .join("");
+        const diffClass = `diff-${esc(idea.difficulty ?? "intermediate")}`;
+        return `
+        <div class="ai-idea-card">
+          <span class="ai-idea-title">${esc(idea.title ?? "")}</span>
+          <p class="ai-idea-desc">${esc(idea.description ?? "")}</p>
+          <div class="ai-idea-why">${esc(idea.why_stars ?? "")}</div>
+          <div class="ai-idea-footer">
+            ${tech}
+            <span class="ai-difficulty ${diffClass}">${esc(idea.difficulty ?? "")}</span>
+          </div>
+        </div>`;
+      })
+      .join("");
+    slot.innerHTML = `
+      <div class="ai-sub-heading">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Project Ideas to Grow Visibility
+      </div>
+      <div class="ai-idea-grid">${cards}</div>`;
+  }
+
+  function renderMetadataSuggestions(suggestions: any[]) {
+    const slot = document.getElementById("ai-metadata-slot") as HTMLDivElement;
+    if (!suggestions.length) {
+      slot.innerHTML = "";
+      return;
+    }
+    const items = suggestions
+      .map((s: any) => {
+        const hasDesc = !!s.suggested_description;
+        const hasTopics =
+          Array.isArray(s.suggested_topics) && s.suggested_topics.length > 0;
+        const badges = [
+          hasDesc
+            ? `<span class="ai-meta-badge ai-meta-badge--desc">description</span>`
+            : "",
+          hasTopics
+            ? `<span class="ai-meta-badge ai-meta-badge--topic">topics</span>`
+            : "",
+        ].join("");
+        const descHtml = hasDesc
+          ? `<span class="ai-meta-desc">"${esc(s.suggested_description)}"</span>`
+          : "";
+        const topicsHtml = hasTopics
+          ? s.suggested_topics
+              .map(
+                (t: string) => `<span class="ai-meta-topic">${esc(t)}</span>`,
+              )
+              .join("")
+          : "";
+        return `
+        <div class="ai-meta-item">
+          <div class="ai-meta-header">
+            <span class="ai-meta-repo">${esc(s.repo ?? "")}</span>
+            <div class="ai-meta-badges">${badges}</div>
+          </div>
+          ${descHtml}
+          ${topicsHtml ? `<div class="ai-meta-topics">${topicsHtml}</div>` : ""}
+        </div>`;
+      })
+      .join("");
+    slot.innerHTML = `
+      <div class="ai-sub-heading">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Suggested Descriptions &amp; Tags
+      </div>
+      <div class="ai-meta-list">${items}</div>`;
+  }
+
+  function renderContributionTargets(targets: any[]) {
+    const slot = document.getElementById(
+      "ai-contribute-slot",
+    ) as HTMLDivElement;
+    if (!targets.length) {
+      slot.innerHTML = "";
+      return;
+    }
+    const items = targets
+      .map((t: any) => {
+        const tech = (t.tech ?? [])
+          .map((b: string) => `<span class="ai-contrib-badge">${esc(b)}</span>`)
+          .join("");
+        const gfi = t.good_first_issues
+          ? `<span class="ai-good-issues">good first issues</span>`
+          : "";
+        return `
+        <div class="ai-contrib-item">
+          <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
+            <a href="${esc(t.url ?? "#")}" target="_blank" rel="noopener noreferrer" class="ai-contrib-name">${esc(t.name ?? "")}</a>
+            ${gfi}
+          </div>
+          <p class="ai-contrib-desc">${esc(t.description ?? "")}</p>
+          <p class="ai-contrib-why">${esc(t.why ?? "")}</p>
+          ${tech ? `<div class="ai-contrib-tech">${tech}</div>` : ""}
+        </div>`;
+      })
+      .join("");
+    slot.innerHTML = `
+      <div class="ai-sub-heading">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 009 9"/></svg>
+        Open Source Projects to Contribute To
+      </div>
+      <div class="ai-contrib-list">${items}</div>`;
+  }
+</script>
+
+<style>
+  /* ─── Navbar ───────────────────────────────────────────────────── */
+  .navbar {
+    background: var(--color-accent);
+    border-bottom: 2px solid var(--color-accent-dark);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .navbar-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .navbar-icon {
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .navbar-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: white;
+    letter-spacing: -0.01em;
+  }
+
+  .navbar-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.75);
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 0.15rem 0.45rem;
+  }
+
+  /* ─── Container ────────────────────────────────────────────────── */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  /* ─── Hero ─────────────────────────────────────────────────────── */
+  .hero {
+    background: var(--color-base-darker);
+    border-bottom: 1px solid var(--color-border);
+    padding: 3.5rem 0 3rem;
+  }
+
+  .hero-title {
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+    font-weight: 800;
+    color: var(--color-white);
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.75rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.95rem;
+    color: var(--color-muted);
+    line-height: 1.6;
+    max-width: 560px;
+    margin: 0 0 2rem;
+  }
+
+  /* ─── Search form ──────────────────────────────────────────────── */
+  .search-form {
+    display: flex;
+    gap: 0;
+    max-width: 560px;
+    border: 1px solid var(--color-border-accent);
+  }
+
+  .search-input-wrap {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 0.85rem;
+    color: var(--color-muted);
+    pointer-events: none;
+    flex-shrink: 0;
+  }
+
+  .search-input {
+    width: 100%;
+    background: var(--color-base-darker);
+    border: none;
+    border-right: 1px solid var(--color-border-accent);
+    color: var(--color-white);
+    font-size: 0.95rem;
+    font-family: inherit;
+    padding: 0.9rem 1rem 0.9rem 2.5rem;
+    outline: none;
+  }
+
+  .search-input::placeholder {
+    color: var(--color-muted);
+  }
+  .search-input:focus {
+    background: #2a2a2a;
+  }
+
+  .search-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    background: var(--color-accent);
+    color: white;
+    border: none;
+    padding: 0 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    font-family: inherit;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    white-space: nowrap;
+    min-width: 9rem;
+    transition: background 0.15s;
+  }
+  .search-btn:hover:not(:disabled) {
+    background: var(--color-accent-dark);
+  }
+  .search-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  /* ─── Error banner ─────────────────────────────────────────────── */
+  .error-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-left: 3px solid #ef4444;
+    color: #fca5a5;
+    font-size: 0.85rem;
+    padding: 0.65rem 1rem;
+    max-width: 560px;
+    margin-top: 0.75rem;
+  }
+
+  /* ─── Results ──────────────────────────────────────────────────── */
+  #results {
+    padding: 2.5rem 0 4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .results-section {
+    padding: 2rem 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .results-section:last-child {
+    border-bottom: none;
+  }
+
+  .section-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+  }
+
+  .section-bar {
+    display: inline-block;
+    width: 4px;
+    height: 20px;
+    background: var(--color-accent);
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-white);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .section-count {
+    font-size: 0.75rem;
+    color: var(--color-muted);
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  /* ─── Filter bar ────────────────────────────────────────────────── */
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-left: auto;
+  }
+
+  .filter-btn {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-muted);
+    background: var(--color-base-lighter);
+    border: 1px solid var(--color-border);
+    padding: 0.3rem 0.7rem;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.12s;
+  }
+  .filter-btn:hover {
+    color: white;
+    border-color: var(--color-accent);
+  }
+  .filter-btn--active {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: white;
+  }
+
+  /* ─── Repos grid ────────────────────────────────────────────────── */
+  .repos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1px;
+    background: var(--color-border);
+  }
+
+  .empty-state {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+    padding: 2rem 0;
+    grid-column: 1/-1;
+  }
+
+  /* ─── Repo card (dynamic HTML styles) ──────────────────────────── */
+  :global(.repo-card) {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    background: var(--color-base-lighter);
+    border-left: 3px solid var(--color-accent);
+    padding: 1rem 1.25rem;
+  }
+  :global(.repo-card--archived) {
+    border-left-color: #6b7280;
+    opacity: 0.8;
+  }
+  :global(.repo-card:hover) {
+    background: #3a3a3a;
+  }
+
+  :global(.repo-header) {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  :global(.repo-title-row) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  :global(.repo-name) {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-accent);
+    text-decoration: none;
+    word-break: break-word;
+  }
+  :global(.repo-name:hover) {
+    text-decoration: underline;
+  }
+  :global(.repo-badges) {
+    display: flex;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+  }
+  :global(.badge) {
+    font-size: 0.65rem;
+    padding: 0.1rem 0.4rem;
+    border: 1px solid;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+  :global(.badge-fork) {
+    color: #a78bfa;
+    border-color: #a78bfa;
+  }
+  :global(.badge-archived) {
+    color: #6b7280;
+    border-color: #6b7280;
+  }
+  :global(.badge-license) {
+    color: var(--color-muted);
+    border-color: var(--color-border);
+  }
+
+  :global(.repo-desc) {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--color-muted);
+    line-height: 1.5;
+  }
+  :global(.repo-live-links) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  :global(.live-link-chip) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: white;
+    background: var(--color-accent);
+    padding: 0.2rem 0.6rem;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  :global(.live-link-chip:hover) {
+    background: var(--color-accent-dark);
+  }
+
+  :global(.repo-tech-stack) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+  :global(.tech-badge) {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: white;
+    background: rgba(59, 130, 246, 0.18);
+    border: 1px solid var(--color-border-accent);
+    padding: 0.15rem 0.45rem;
+  }
+
+  :global(.repo-topics) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+  :global(.topic-tag) {
+    font-size: 0.7rem;
+    color: var(--color-muted);
+  }
+
+  :global(.repo-footer) {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: auto;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--color-border);
+  }
+  :global(.repo-stats) {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  :global(.repo-stat) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--color-muted);
+  }
+  :global(.lang-dot) {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    background: var(--color-accent);
+  }
+  :global(.repo-stat-date) {
+    margin-left: auto;
+  }
+
+  :global(.score-section) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  :global(.score-label) {
+    font-size: 0.68rem;
+    color: var(--color-muted);
+    white-space: nowrap;
+    min-width: 5rem;
+  }
+  :global(.score-bar-track) {
+    flex: 1;
+    height: 3px;
+    background: var(--color-border);
+  }
+  :global(.score-bar-fill) {
+    height: 3px;
+    background: var(--color-accent);
+    min-width: 2px;
+  }
+
+  /* ─── Profile card (dynamic) ────────────────────────────────────── */
+  :global(.profile-card) {
+    display: flex;
+    gap: 1.5rem;
+    background: var(--color-base-lighter);
+    border: 1px solid var(--color-border);
+    border-left: 4px solid var(--color-accent);
+    padding: 1.5rem;
+  }
+  :global(.profile-avatar) {
+    display: block;
+    width: 88px;
+    height: 88px;
+    object-fit: cover;
+    border: 2px solid var(--color-border-accent);
+    flex-shrink: 0;
+  }
+  :global(.profile-avatar-col) {
+    flex-shrink: 0;
+  }
+  :global(.profile-info-col) {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+  :global(.profile-name-row) {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  :global(.profile-name) {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: white;
+  }
+  :global(.profile-handle) {
+    font-size: 0.875rem;
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+  :global(.profile-handle:hover) {
+    text-decoration: underline;
+  }
+  :global(.profile-bio) {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--color-muted);
+    line-height: 1.5;
+  }
+  :global(.profile-meta) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  :global(.meta-chip) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.75rem;
+    color: var(--color-muted);
+    background: var(--color-base-darker);
+    border: 1px solid var(--color-border);
+    padding: 0.2rem 0.5rem;
+    white-space: nowrap;
+  }
+  :global(.meta-link) {
+    color: var(--color-accent);
+  }
+  :global(.meta-link:hover) {
+    text-decoration: underline;
+  }
+  :global(.profile-stats) {
+    display: flex;
+    align-items: center;
+    background: var(--color-base-darker);
+    border: 1px solid var(--color-border);
+    width: fit-content;
+    margin-top: 0.25rem;
+  }
+  :global(.stat-item) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.4rem 1rem;
+    gap: 0.1rem;
+  }
+  :global(.stat-value) {
+    font-size: 1rem;
+    font-weight: 600;
+    color: white;
+  }
+  :global(.stat-label) {
+    font-size: 0.7rem;
+    color: var(--color-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  :global(.stat-divider) {
+    width: 1px;
+    height: 2rem;
+    background: var(--color-border);
+  }
+
+  /* ─── Top projects (dynamic) ────────────────────────────────────── */
+  :global(.top-projects) {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  :global(.top-list) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  :global(.top-item) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: var(--color-base-lighter);
+    border: 1px solid var(--color-border-accent);
+    padding: 0.45rem 0.85rem;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  :global(.top-item:hover) {
+    background: rgba(59, 130, 246, 0.12);
+  }
+  :global(.top-rank) {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--color-accent);
+  }
+  :global(.top-name) {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: white;
+  }
+  :global(.top-lang) {
+    font-size: 0.7rem;
+    color: var(--color-muted);
+    background: var(--color-base-darker);
+    border: 1px solid var(--color-border);
+    padding: 0.1rem 0.35rem;
+  }
+  :global(.top-stars) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    font-size: 0.72rem;
+    color: #facc15;
+    margin-left: 0.2rem;
+  }
+
+  /* ─── JSON preview ──────────────────────────────────────────────── */
+  .json-preview-wrap {
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+  }
+
+  .json-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--color-base-darker);
+    border-bottom: 1px solid var(--color-border);
+    padding: 0.6rem 1rem;
+  }
+
+  .json-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-accent);
+  }
+
+  .json-actions {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .json-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: white;
+    background: var(--color-base-lighter);
+    border: 1px solid var(--color-border);
+    padding: 0.3rem 0.7rem;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .json-btn:hover {
+    background: var(--color-base);
+  }
+  .json-btn--accent {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+  }
+  .json-btn--accent:hover {
+    background: var(--color-accent-dark);
+  }
+
+  .json-body {
+    margin: 0;
+    padding: 1rem;
+    background: var(--color-base-darker);
+    overflow: auto;
+    max-height: 520px;
+    font-size: 0.78rem;
+    line-height: 1.65;
+    color: #e2e8f0;
+    white-space: pre;
+    tab-size: 2;
+  }
+
+  /* ─── Footer ────────────────────────────────────────────────────── */
+  .footer {
+    background: var(--color-base-darker);
+    border-top: 1px solid var(--color-border);
+    padding: 1.25rem 0;
+    font-size: 0.75rem;
+    color: var(--color-muted);
+  }
+
+  /* ─── Responsive ────────────────────────────────────────────────── */
+  /* ─── AI Section ───────────────────────────────────────────────── */
+  .ai-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: white;
+    background: var(--color-accent);
+    border: 1px solid var(--color-accent);
+    padding: 0.4rem 1rem;
+    cursor: pointer;
+    font-family: inherit;
+    margin-left: auto;
+    transition: background 0.15s;
+  }
+  .ai-btn:hover:not(:disabled) {
+    background: var(--color-accent-dark);
+  }
+  .ai-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .ai-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--color-muted);
+    font-size: 0.875rem;
+    padding: 1.5rem 0;
+  }
+
+  .ai-error {
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-left: 3px solid #ef4444;
+    padding: 0.65rem 1rem;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
+
+  #ai-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    margin-top: 0.25rem;
+  }
+
+  .ai-subsection {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  :global(.ai-sub-heading) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-accent);
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  /* Tips */
+  :global(.ai-tip-list) {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--color-border);
+  }
+  :global(.ai-tip-card) {
+    display: flex;
+    gap: 0.75rem;
+    background: var(--color-base-lighter);
+    border-left: 3px solid transparent;
+    padding: 0.75rem 1rem;
+    align-items: flex-start;
+  }
+  :global(.ai-tip-card.priority-high) {
+    border-left-color: #ef4444;
+  }
+  :global(.ai-tip-card.priority-medium) {
+    border-left-color: #f59e0b;
+  }
+  :global(.ai-tip-card.priority-low) {
+    border-left-color: #6b7280;
+  }
+  :global(.tip-meta) {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    flex-shrink: 0;
+    width: 6.5rem;
+  }
+  :global(.tip-repo) {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--color-accent);
+    font-family: monospace;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  :global(.tip-category) {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-muted);
+  }
+  :global(.tip-priority) {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 0.1rem 0.35rem;
+    margin-top: 0.2rem;
+    width: fit-content;
+  }
+  :global(.priority-high .tip-priority) {
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+  }
+  :global(.priority-medium .tip-priority) {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fcd34d;
+  }
+  :global(.priority-low .tip-priority) {
+    background: rgba(107, 114, 128, 0.15);
+    color: #9ca3af;
+  }
+  :global(.tip-text) {
+    font-size: 0.85rem;
+    color: var(--color-white);
+    line-height: 1.55;
+    flex: 1;
+  }
+
+  /* Ideas */
+  :global(.ai-idea-grid) {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1px;
+    background: var(--color-border);
+  }
+  :global(.ai-idea-card) {
+    background: var(--color-base-lighter);
+    border-left: 3px solid var(--color-accent);
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  :global(.ai-idea-title) {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: white;
+  }
+  :global(.ai-idea-desc) {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--color-muted);
+    line-height: 1.5;
+    flex: 1;
+  }
+  :global(.ai-idea-why) {
+    font-size: 0.78rem;
+    color: #86efac;
+    border-left: 2px solid #22c55e;
+    padding-left: 0.5rem;
+    line-height: 1.4;
+  }
+  :global(.ai-idea-footer) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--color-border);
+  }
+  :global(.ai-difficulty) {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 0.15rem 0.4rem;
+    margin-left: auto;
+  }
+  :global(.diff-beginner) {
+    background: rgba(34, 197, 94, 0.15);
+    color: #86efac;
+  }
+  :global(.diff-intermediate) {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fcd34d;
+  }
+  :global(.diff-advanced) {
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+  }
+
+  /* Metadata */
+  :global(.ai-meta-list) {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--color-border);
+  }
+  :global(.ai-meta-item) {
+    background: var(--color-base-lighter);
+    padding: 0.85rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  :global(.ai-meta-repo) {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--color-accent);
+  }
+  :global(.ai-meta-header) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  :global(.ai-meta-badges) {
+    display: flex;
+    gap: 0.3rem;
+    margin-left: auto;
+  }
+  :global(.ai-meta-badge) {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.1rem 0.4rem;
+  }
+  :global(.ai-meta-badge--desc) {
+    background: rgba(59, 130, 246, 0.15);
+    color: #93c5fd;
+  }
+  :global(.ai-meta-badge--topic) {
+    background: rgba(139, 92, 246, 0.15);
+    color: #c4b5fd;
+  }
+  :global(.ai-meta-desc) {
+    font-size: 0.85rem;
+    color: var(--color-white);
+    font-style: italic;
+    line-height: 1.4;
+  }
+  :global(.ai-meta-topics) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-top: 0.1rem;
+  }
+  :global(.ai-meta-topic) {
+    font-size: 0.68rem;
+    background: rgba(59, 130, 246, 0.18);
+    border: 1px solid var(--color-border-accent);
+    color: white;
+    padding: 0.1rem 0.4rem;
+  }
+
+  /* Contribution targets */
+  :global(.ai-contrib-list) {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--color-border);
+  }
+  :global(.ai-contrib-item) {
+    background: var(--color-base-lighter);
+    border-left: 3px solid var(--color-accent);
+    padding: 0.85rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  :global(.ai-contrib-name) {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+  :global(.ai-contrib-name:hover) {
+    text-decoration: underline;
+  }
+  :global(.ai-contrib-desc) {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--color-muted);
+    line-height: 1.4;
+  }
+  :global(.ai-contrib-why) {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--color-white);
+    line-height: 1.4;
+  }
+  :global(.ai-contrib-tech) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+  :global(.ai-contrib-badge) {
+    font-size: 0.65rem;
+    background: rgba(59, 130, 246, 0.18);
+    border: 1px solid var(--color-border-accent);
+    color: white;
+    padding: 0.1rem 0.35rem;
+  }
+  :global(.ai-good-issues) {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: rgba(34, 197, 94, 0.15);
+    color: #86efac;
+    padding: 0.1rem 0.4rem;
+  }
+
+  @media (max-width: 600px) {
+    .search-form {
+      flex-direction: column;
+    }
+    .search-btn {
+      padding: 0.85rem;
+      min-width: unset;
+    }
+    :global(.profile-card) {
+      flex-direction: column;
+      gap: 1rem;
+    }
+    :global(.profile-avatar) {
+      width: 64px;
+      height: 64px;
+    }
+    .filter-bar {
+      margin-left: 0;
+    }
+    .section-heading {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .repos-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
