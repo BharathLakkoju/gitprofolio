@@ -3,7 +3,7 @@
  */
 
 const BASE = "https://openrouter.ai/api/v1";
-const DEFAULT_MODEL = "openai/gpt-4o-mini";
+const DEFAULT_MODEL = "openrouter/elephant-alpha";
 
 // ─── Error ────────────────────────────────────────────────────────────────────
 

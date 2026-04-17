@@ -179,6 +179,12 @@ const displayDate = new Date(repo.updated_at).toLocaleDateString("en-US", {
     transition: border-color 0.15s;
   }
 
+  @media (max-width: 640px) {
+    .repo-card {
+      padding: 0.875rem 0.875rem 0.875rem 1.25rem;
+    }
+  }
+
   .repo-card:hover {
     border-color: var(--color-accent);
     border-left-color: var(--color-accent);
