@@ -17,8 +17,23 @@ function authHeaders(): HeadersInit {
   return headers;
 }
 
+/** Timeout in milliseconds for each individual GitHub API call. */
+const GITHUB_FETCH_TIMEOUT_MS = 15_000;
+
 async function ghFetch(url: string): Promise<Response> {
-  const res = await fetch(url, { headers: authHeaders() });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), GITHUB_FETCH_TIMEOUT_MS);
+  let res: Response;
+  try {
+    res = await fetch(url, { headers: authHeaders(), signal: controller.signal });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error(`GitHub API request timed out after ${GITHUB_FETCH_TIMEOUT_MS / 1000}s.`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 
   if (res.status === 403 || res.status === 429) {
     const remaining = res.headers.get("X-RateLimit-Remaining");

@@ -311,15 +311,15 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
   function renderProfile(p: any) {
     const website = p.website
-      ? `<a href="${esc(p.website.startsWith("http") ? p.website : "https://" + p.website)}" target="_blank" rel="noopener noreferrer" class="meta-chip meta-link">
+      ? `<a href="${safeUrl(p.website.startsWith("http") ? p.website : "https://" + p.website)}" target="_blank" rel="noopener noreferrer" class="meta-chip meta-link">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
       Website</a>`
       : "";
     const twitter = p.socials?.twitter
-      ? `<a href="${esc(p.socials.twitter)}" target="_blank" rel="noopener noreferrer" class="meta-chip meta-link">Twitter</a>`
+      ? `<a href="${safeUrl(p.socials.twitter)}" target="_blank" rel="noopener noreferrer" class="meta-chip meta-link">Twitter</a>`
       : "";
     const linkedin = p.socials?.linkedin
-      ? `<a href="${esc(p.socials.linkedin)}" target="_blank" rel="noopener noreferrer" class="meta-chip meta-link">LinkedIn</a>`
+      ? `<a href="${safeUrl(p.socials.linkedin)}" target="_blank" rel="noopener noreferrer" class="meta-chip meta-link">LinkedIn</a>`
       : "";
     const location = p.location
       ? `<span class="meta-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>${esc(p.location)}</span>`
@@ -366,7 +366,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         const stars = repo
           ? `<span class="top-stars"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>${repo.stars}</span>`
           : "";
-        return `<a href="${esc(repo?.url ?? "#")}" target="_blank" rel="noopener noreferrer" class="top-item">
+        return `<a href="${safeUrl(repo?.url ?? "#")}" target="_blank" rel="noopener noreferrer" class="top-item">
         <span class="top-rank">#${i + 1}</span>
         <span class="top-name">${esc(name)}</span>
         ${lang}${stars}
@@ -426,7 +426,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       ? repo.live_links
           .map(
             (l: string) =>
-              `<a href="${esc(l)}" target="_blank" rel="noopener noreferrer" class="live-link-chip"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Live</a>`,
+              `<a href="${safeUrl(l)}" target="_blank" rel="noopener noreferrer" class="live-link-chip"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Live</a>`,
           )
           .join("")
       : "";
@@ -451,7 +451,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <div class="repo-card${repo.archived ? " repo-card--archived" : ""}" data-fork="${repo.fork}" data-live="${repo.live_links?.length > 0}" data-stars="${repo.stars}">
         <div class="repo-header">
           <div class="repo-title-row">
-            <a href="${esc(repo.url)}" target="_blank" rel="noopener noreferrer" class="repo-name">${esc(repo.name)}</a>
+            <a href="${safeUrl(repo.url)}" target="_blank" rel="noopener noreferrer" class="repo-name">${esc(repo.name)}</a>
             <div class="repo-badges">${badges}</div>
           </div>
           ${desc ? `<p class="repo-desc">${esc(desc)}</p>` : ""}
@@ -531,6 +531,23 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#39;");
+  }
+
+  /**
+   * Validates that a URL uses an allowed protocol (http/https) before
+   * escaping it for use in an href attribute.  Prevents javascript: / data:
+   * URLs from being injected via user-controlled or AI-generated content.
+   */
+  function safeUrl(url: string, fallback = "#"): string {
+    if (!url || url === "#") return fallback;
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:")
+        return fallback;
+      return esc(url);
+    } catch {
+      return fallback;
+    }
   }
 
   function setLoading(on: boolean) {
@@ -758,7 +775,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         return `
         <div class="ai-contrib-item">
           <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
-            <a href="${esc(t.url ?? "#")}" target="_blank" rel="noopener noreferrer" class="ai-contrib-name">${esc(t.name ?? "")}</a>
+            <a href="${safeUrl(t.url ?? "#")}" target="_blank" rel="noopener noreferrer" class="ai-contrib-name">${esc(t.name ?? "")}</a>
             ${gfi}
           </div>
           <p class="ai-contrib-desc">${esc(t.description ?? "")}</p>
